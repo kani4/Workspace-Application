@@ -1,0 +1,296 @@
+openapi: 3.0.0
+info:
+  title: Workspace Management API
+  description: API for managing workspaces categorized by asset types such as HOUSE, BOAT, and VEHICLE
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@workspaceapi.com
+
+servers:
+  - url: https://api.workspaceservice.com/v1
+
+tags:
+  - name: workspaces
+    description: Workspace management
+
+paths:
+  /workspaces:
+    get:
+      summary: List all workspaces
+      tags:
+        - workspaces
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [active, inactive, archived]
+        - in: query
+          name: type
+          schema:
+            $ref: '#/components/schemas/WorkspaceType'
+        - in: query
+          name: createdAfter
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: createdBefore
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Workspace'
+    post:
+      summary: Create a new workspace
+      tags:
+        - workspaces
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /workspaces/{workspaceId}:
+    get:
+      summary: Get workspace details
+      tags:
+        - workspaces
+      parameters:
+        - in: path
+          name: workspaceId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+    put:
+      summary: Update workspace details
+      tags:
+        - workspaces
+      parameters:
+        - in: path
+          name: workspaceId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceUpdate'
+      responses:
+        '200':
+          description: Successful update
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete a workspace
+      tags:
+        - workspaces
+      parameters:
+        - in: path
+          name: workspaceId
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Successful deletion
+
+components:
+  schemas:
+    WorkspaceType:
+      type: string
+      enum: [HOUSE, BOAT, VEHICLE]
+
+    Address:
+      type: object
+      properties:
+        street:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+      required:
+        - street
+        - city
+        - state
+        - postalCode
+        - country
+
+    Workspace:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          $ref: '#/components/schemas/WorkspaceType'
+        status:
+          type: string
+          enum: [active, inactive, archived]
+        address:
+          $ref: '#/components/schemas/Address'
+        hin:
+          type: string
+          description: Hull Identification Number for boats
+        registrationNumber:
+          type: string
+          description: Registration number for vehicles
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+
+    WorkspaceInput:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          $ref: '#/components/schemas/WorkspaceType'
+        address:
+          $ref: '#/components/schemas/Address'
+        hin:
+          type: string
+          description: Hull Identification Number for boats
+        registrationNumber:
+          type: string
+          description: Registration number for vehicles
+        metadata:
+          type: object
+          additionalProperties: true
+      allOf:
+        - if:
+            properties:
+              type:
+                const: HOUSE
+          then:
+            required:
+              - address
+        - if:
+            properties:
+              type:
+                const: BOAT
+          then:
+            required:
+              - hin
+        - if:
+            properties:
+              type:
+                const: VEHICLE
+          then:
+            required:
+              - registrationNumber
+
+    WorkspaceUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          $ref: '#/components/schemas/WorkspaceType'
+        status:
+          type: string
+          enum: [active, inactive, archived]
+        address:
+          $ref: '#/components/schemas/Address'
+        hin:
+          type: string
+          description: Hull Identification Number for boats
+        registrationNumber:
+          type: string
+          description: Registration number for vehicles
+        metadata:
+          type: object
+          additionalProperties: true
+      allOf:
+        - if:
+            properties:
+              type:
+                const: HOUSE
+          then:
+            required:
+              - address
+        - if:
+            properties:
+              type:
+                const: BOAT
+          then:
+            required:
+              - hin
+        - if:
+            properties:
+              type:
+                const: VEHICLE
+          then:
+            required:
+              - registrationNumber
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+      required:
+        - code
+        - message
